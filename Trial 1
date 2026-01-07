@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reading & Investment Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 1.5rem;
+      background: #f5f5f7;
+      color: #111827;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 1.5rem;
+      text-align: center;
+    }
+
+    .app-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.5fr);
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .app-container {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    .card h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem 1rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #4b5563;
+    }
+
+    input,
+    select {
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      padding: 0.4rem 0.55rem;
+      font-size: 0.85rem;
+      outline: none;
+      background: #f9fafb;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25);
+      background: #ffffff;
+    }
+
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
+    .actions-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 0.45rem 0.9rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: #4f46e5;
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+    }
+
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      align-items: center;
+    }
+
+    .summary-item {
+      background: #f3f4ff;
+      color: #111827;
+      border-radius: 999px;
+      padding: 0.35rem 0.8rem;
+      font-size: 0.8rem;
+    }
+
+    .summary-item strong {
+      font-weight: 600;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-row select {
+      max-width: 150px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      background: #f9fafb;
+      z-index: 1;
+    }
+
+    th,
+    td {
+      padding: 0.4rem 0.3rem;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+    }
+
+    th {
+      font-weight: 600;
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f9fafb;
+    }
+
+    .table-wrapper {
+      max-height: 450px;
+      overflow: auto;
+      border-radius: 0.75rem;
+      border: 1px solid #e5e7eb;
+      background: white;
+    }
+
+    .rating-cell {
+      text-align: center;
+    }
+
+    .amount-cell {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .no-data {
+      text-align: center;
+      padding: 1rem;
+      color: #9ca3af;
+      font-size: 0.85rem;
+    }
+
+    .small-text {
+      font-size: 0.7rem;
+      color: #6b7280;
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>📚 Reading & Investment Tracker</h1>
+
+  <div class="app-container">
+    <!-- FORM CARD -->
+    <div class="card">
+      <h2>
+        Add / Edit Book
+        <span class="small-text" id="form-mode-label">New entry</span>
+      </h2>
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label for="title">Title</label>
+          <input id="title" type="text" placeholder="Book title" />
+        </div>
+
+        <div class="form-group">
+          <label for="author">Author</label>
+          <input id="author" type="text" placeholder="Author name" />
+        </div>
+
+        <div class="form-group">
+          <label for="genre">Genre</label>
+          <input id="genre" type="text" placeholder="e.g. Fantasy, Non-fiction" />
+        </div>
+
+        <div class="form-group">
+          <label for="year">Year read</label>
+          <input id="year" type="number" min="2000" max="2100" />
+        </div>
+
+        <div class="form-group">
+          <label for="pages">Pages</label>
+          <input id="pages" type="number" min="1" placeholder="e.g. 320" />
+        </div>
+
+        <div class="form-group">
+          <label for="rating">Rating (1–5)</label>
+          <input id="rating" type="number" min="1" max="5" step="0.5" />
+        </div>
+
+        <div class="form-group">
+          <label for="investmentAmount">Investment amount</label>
+          <input
+            id="investmentAmount"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="e.g. 50"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="assetType">Asset type</label>
+          <select id="assetType">
+            <option value="">-- optional --</option>
+            <option value="Stock">Stock</option>
+            <option value="ETF">ETF</option>
+            <option value="Fund">Fund</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="assetName">Asset name / ticker</label>
+          <input
+            id="assetName"
+            type="text"
+            placeholder="e.g. VWCE, S&P 500 ETF"
+          />
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button class="btn-secondary" id="clear-form-btn" type="button">
+          Clear
+        </button>
+        <button class="btn-primary" id="save-btn" type="button">
+          Save entry
+        </button>
+      </div>
+
+      <p class="small-text">
+        Data is stored locally in this browser only. Exporting & syncing can be
+        added later if you want.
+      </p>
+    </div>
+
+    <!-- TABLE / SUMMARY CARD -->
+    <div class="card">
+      <h2>
+        Overview
+      </h2>
+
+      <div class="summary">
+        <div class="summary-item">
+          Books: <strong id="summary-books">0</strong>
+        </div>
+        <div class="summary-item">
+          Pages: <strong id="summary-pages">0</strong>
+        </div>
+        <div class="summary-item">
+          Invested: <strong id="summary-invested">0.00</strong>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <label for="filterYear">Year:</label>
+        <select id="filterYear">
+          <option value="all">All years</option>
+        </select>
+
+        <button class="btn-secondary" id="reset-data-btn" type="button">
+          Clear all data
+        </button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Title</th>
+              <th>Author</th>
+              <th>Genre</th>
+              <th>Pages</th>
+              <th>Rating</th>
+              <th>Invested</th>
+              <th>Asset</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="books-tbody">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "reading_investment_tracker_v1";
+
+    let books = [];
+    let editingIndex = null;
+
+    const titleInput = document.getElementById("title");
+    const authorInput = document.getElementById("author");
+    const genreInput = document.getElementById("genre");
+    const yearInput = document.getElementById("year");
+    const pagesInput = document.getElementById("pages");
+    const ratingInput = document.getElementById("rating");
+    const investmentAmountInput = document.getElementById("investmentAmount");
+    const assetTypeSelect = document.getElementById("assetType");
+    const assetNameInput = document.getElementById("assetName");
+
+    const formModeLabel = document.getElementById("form-mode-label");
+    const saveBtn = document.getElementById("save-btn");
+    const clearFormBtn = document.getElementById("clear-form-btn");
+    const resetDataBtn = document.getElementById("reset-data-btn");
+
+    const booksTbody = document.getElementById("books-tbody");
+    const filterYearSelect = document.getElementById("filterYear");
+
+    const summaryBooks = document.getElementById("summary-books");
+    const summaryPages = document.getElementById("summary-pages");
+    const summaryInvested = document.getElementById("summary-invested");
+
+    function loadData() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        books = [];
+        return;
+      }
+      try {
+        books = JSON.parse(raw);
+      } catch (e) {
+        console.error("Failed to parse stored data", e);
+        books = [];
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+    }
+
+    function clearForm() {
+      titleInput.value = "";
+      authorInput.value = "";
+      genreInput.value = "";
+      yearInput.value = new Date().getFullYear();
+      pagesInput.value = "";
+      ratingInput.value = "";
+      investmentAmountInput.value = "";
+      assetTypeSelect.value = "";
+      assetNameInput.value = "";
+      editingIndex = null;
+      formModeLabel.textContent = "New entry";
+    }
+
+    function populateYearFilter() {
+      const years = Array.from(
+        new Set(
+          books
+            .map((b) => b.year)
+            .filter((y) => y && !isNaN(Number(y)))
+            .map((y) => Number(y))
+        )
+      ).sort((a, b) => b - a);
+
+      const currentValue = filterYearSelect.value || "all";
+
+      filterYearSelect.innerHTML = "";
+      const allOption = document.createElement("option");
+      allOption.value = "all";
+      allOption.textContent = "All years";
+      filterYearSelect.appendChild(allOption);
+
+      years.forEach((year) => {
+        const opt = document.createElement("option");
+        opt.value = String(year);
+        opt.textContent = String(year);
+        filterYearSelect.appendChild(opt);
+      });
+
+      if (
+        Array.from(filterYearSelect.options).some(
+          (opt) => opt.value === currentValue
+        )
+      ) {
+        filterYearSelect.value = currentValue;
+      } else {
+        filterYearSelect.value = "all";
+      }
+    }
+
+    function renderTable() {
+      booksTbody.innerHTML = "";
+
+      const selectedYear = filterYearSelect.value;
+      const filteredBooks =
+        selectedYear === "all"
+          ? books
+          : books.filter((b) => String(b.year) === selectedYear);
+
+      if (filteredBooks.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 9;
+        td.className = "no-data";
+        td.textContent = "No entries yet. Add your first finished book!";
+        tr.appendChild(td);
+        booksTbody.appendChild(tr);
+        updateSummary(filteredBooks);
+        return;
+      }
+
+      filteredBooks.forEach((book) => {
+        const tr = document.createElement("tr");
+
+        const yearTd = document.createElement("td");
+        yearTd.textContent = book.year || "";
+        tr.appendChild(yearTd);
+
+        const titleTd = document.createElement("td");
+        titleTd.textContent = book.title || "";
+        tr.appendChild(titleTd);
+
+        const authorTd = document.createElement("td");
+        authorTd.textContent = book.author || "";
+        tr.appendChild(authorTd);
+
+        const genreTd = document.createElement("td");
+        genreTd.textContent = book.genre || "";
+        tr.appendChild(genreTd);
+
+        const pagesTd = document.createElement("td");
+        pagesTd.textContent = book.pages || "";
+        tr.appendChild(pagesTd);
+
+        const ratingTd = document.createElement("td");
+        ratingTd.className = "rating-cell";
+        ratingTd.textContent = book.rating || "";
+        tr.appendChild(ratingTd);
+
+        const amountTd = document.createElement("td");
+        amountTd.className = "amount-cell";
+        amountTd.textContent =
+          book.investmentAmount && !isNaN(Number(book.investmentAmount))
+            ? Number(book.investmentAmount).toFixed(2)
+            : "";
+        tr.appendChild(amountTd);
+
+        const assetTd = document.createElement("td");
+        assetTd.textContent = [book.assetType, book.assetName]
+          .filter(Boolean)
+          .join(" – ");
+        tr.appendChild(assetTd);
+
+        const actionTd = document.createElement("td");
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Edit";
+        editBtn.className = "btn-secondary";
+        editBtn.style.fontSize = "0.7rem";
+        editBtn.onclick = () => startEdit(book.id);
+        actionTd.appendChild(editBtn);
+
+        tr.appendChild(actionTd);
+        booksTbody.appendChild(tr);
+      });
+
+      updateSummary(filteredBooks);
+    }
+
+    function updateSummary(list) {
+      const target = list || books;
+      summaryBooks.textContent = target.length;
+
+      const totalPages = target.reduce(
+        (sum, b) => sum + (Number(b.pages) || 0),
+        0
+      );
+      summaryPages.textContent = totalPages;
+
+      const totalInvested = target.reduce(
+        (sum, b) => sum + (Number(b.investmentAmount) || 0),
+        0
+      );
+      summaryInvested.textContent = totalInvested.toFixed(2);
+    }
+
+    function startEdit(id) {
+      const index = books.findIndex((b) => b.id === id);
+      if (index === -1) return;
+      const book = books[index];
+      editingIndex = index;
+
+      titleInput.value = book.title || "";
+      authorInput.value = book.author || "";
+      genreInput.value = book.genre || "";
+      yearInput.value = book.year || new Date().getFullYear();
+      pagesInput.value = book.pages || "";
+      ratingInput.value = book.rating || "";
+      investmentAmountInput.value = book.investmentAmount || "";
+      assetTypeSelect.value = book.assetType || "";
+      assetNameInput.value = book.assetName || "";
+
+      formModeLabel.textContent = "Editing entry";
+    }
+
+    function handleSave() {
+      const title = titleInput.value.trim();
+      const author = authorInput.value.trim();
+      const genre = genreInput.value.trim();
+      const year = yearInput.value ? Number(yearInput.value) : "";
+      const pages = pagesInput.value ? Number(pagesInput.value) : "";
+      const rating = ratingInput.value ? Number(ratingInput.value) : "";
+      const investmentAmount = investmentAmountInput.value
+        ? Number(investmentAmountInput.value)
+        : "";
+      const assetType = assetTypeSelect.value;
+      const assetName = assetNameInput.value.trim();
+
+      if (!title) {
+        alert("Please enter at least the book title.");
+        return;
+      }
+
+      const bookData = {
+        id: editingIndex !== null ? books[editingIndex].id : Date.now(),
+        title,
+        author,
+        genre,
+        year,
+        pages,
+        rating,
+        investmentAmount,
+        assetType,
+        assetName,
+      };
+
+      if (editingIndex !== null) {
+        books[editingIndex] = bookData;
+      } else {
+        books.push(bookData);
+      }
+
+      saveData();
+      populateYearFilter();
+      renderTable();
+      clearForm();
+    }
+
+    function resetAllData() {
+      if (
+        !confirm(
+          "This will delete ALL your stored books and investments in this browser. Continue?"
+        )
+      ) {
+        return;
+      }
+      books = [];
+      saveData();
+      populateYearFilter();
+      renderTable();
+      clearForm();
+    }
+
+    saveBtn.addEventListener("click", handleSave);
+    clearFormBtn.addEventListener("click", clearForm);
+    resetDataBtn.addEventListener("click", resetAllData);
+    filterYearSelect.addEventListener("change", () => renderTable());
+
+    (function init() {
+      loadData();
+      if (!yearInput.value) {
+        yearInput.value = new Date().getFullYear();
+      }
+      populateYearFilter();
+      renderTable();
+    })();
+  </script>
+</body>
+</html>
